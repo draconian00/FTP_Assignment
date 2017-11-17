@@ -47,6 +47,8 @@ class threadedServer extends Thread {
         try (
             BufferedReader br = new BufferedReader(new InputStreamReader(c_client.getInputStream()));
             PrintWriter c_out = new PrintWriter(c_client.getOutputStream(), true);
+            DataInputStream d_in = new DataInputStream(d_client.getInputStream());
+            DataOutputStream d_out = new DataOutputStream(d_client.getOutputStream());
         ) {
             String commandLine;
             String[] commandArray;
@@ -57,14 +59,15 @@ class threadedServer extends Thread {
                 commandArray = commandLine.split(" ");
                 String command = commandArray[0];
                 String arg = (commandArray.length > 1) ? commandArray[1] : "";
-                if (command.compareTo("CD") == 0 || command.compareTo("cd") == 0) {
+                String arg2 = (commandArray.length > 2) ? commandArray[2] : "";
+                if ("cd".equalsIgnoreCase(command)) {
                     curDir = CD(c_out, arg, curDir);
-                } else if (command.compareTo("LIST") == 0 || command.compareTo("ls") == 0) {
+                } else if ("list".equalsIgnoreCase(command) || "ls".equalsIgnoreCase(command)) {
                     LIST(c_out, arg, curDir);
-                } else if (command.compareTo("GET") == 0) {
-                    GET(c_out, arg);
-                } else if (command.compareTo("PUT") == 0) {
-                    PUT(c_out, arg);
+                } else if ("get".equalsIgnoreCase(command)) {
+                    GET(c_out, d_out, arg, curDir);
+                } else if ("put".equalsIgnoreCase(command)) {
+                    PUT(c_out, d_in, arg, arg2, curDir);
                 } else {
                     c_out.println(command + ": command not found");
                 }
@@ -150,11 +153,76 @@ class threadedServer extends Thread {
         }
     }
 
-    void GET(PrintWriter c_out, String arg) {
-        c_out.println("not yet");
+    void GET(PrintWriter c_out, DataOutputStream d_out, String arg, String curDir) {
+        String filename;
+        try {
+            if (arg.compareTo("") == 0) {
+                c_out.println("FAILED - Need file name argument (Server)");
+                return;
+            } else {
+                if (arg.charAt(0) == '/') {
+                    filename = arg;
+                } else {
+                    filename = curDir + '/' + arg;
+                }
+            }
+
+            File f = new File(filename);
+
+            if (!f.exists()) {
+                c_out.println("FAILED - File does not exist (Server)");
+                return;
+            } else if (f.isDirectory()) {
+                c_out.println("FAILED - " + filename + " is a directory (Server)");
+                return;
+            } else {
+                c_out.println("READY " + f.getName());
+                FileInputStream fin = new FileInputStream(f);
+                int ch;
+                do {
+                    ch = fin.read();
+                    d_out.writeUTF(String.valueOf(ch));
+                } while (ch != -1);
+                fin.close();
+//                d_out.writeUTF("Received " + f.getName() + " / " + f.length() + "byte(s)");
+                c_out.println("Received " + f.getName() + " / " + f.length() + "byte(s)");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    void PUT(PrintWriter c_out, String arg) {
-        c_out.println("not yet");
+    void PUT(PrintWriter c_out, DataInputStream d_in, String arg, String arg2, String curDir) {
+        String filename = curDir + "/" + arg;
+
+        try {
+            File f = new File(filename);
+
+            if (f.exists()) {
+                c_out.println("FAILED - File already exists (Server)");
+                return;
+            } else {
+                c_out.println("READY " + arg);
+
+                FileOutputStream f_out = new FileOutputStream(f);
+                int ch;
+                String temp;
+
+                do {
+                    temp = d_in.readUTF();
+                    ch = Integer.parseInt(temp);
+                    if (ch != -1) {
+                        f_out.write(ch);
+                    }
+                } while (ch != -1);
+                f_out.close();
+
+                c_out.println("Sent " + arg + " / " + arg2 + "byte(s)");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
