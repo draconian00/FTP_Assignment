@@ -188,7 +188,6 @@ class threadedServer extends Thread {
                     d_out.writeUTF(String.valueOf(ch));
                 } while (ch != -1);
                 fin.close();
-//                d_out.writeUTF("Received " + f.getName() + " / " + f.length() + "byte(s)");
                 c_out.println("Received " + f.getName() + " / " + f.length() + "byte(s)");
             }
 
