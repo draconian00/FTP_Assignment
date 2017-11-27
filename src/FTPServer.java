@@ -45,14 +45,14 @@ class threadedServer extends Thread {
         System.out.println(curDir);
 
         try (
-            BufferedReader br = new BufferedReader(new InputStreamReader(c_client.getInputStream()));
+            BufferedReader c_in = new BufferedReader(new InputStreamReader(c_client.getInputStream()));
             PrintWriter c_out = new PrintWriter(c_client.getOutputStream(), true);
             DataInputStream d_in = new DataInputStream(d_client.getInputStream());
             DataOutputStream d_out = new DataOutputStream(d_client.getOutputStream());
         ) {
             String commandLine;
             String[] commandArray;
-            while ((commandLine = br.readLine()) != null) {
+            while ((commandLine = c_in.readLine()) != null) {
                 // Command Process block;
                 System.out.println("Client request [" + Thread.currentThread() + "]: " + commandLine);
 
