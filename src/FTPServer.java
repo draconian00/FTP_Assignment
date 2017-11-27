@@ -146,6 +146,10 @@ class threadedServer extends Thread {
                 response_str += f_str;
             }
 
+            if (files.length == 0) {
+                response_str += "Empty Directory";
+            }
+
             c_out.println(response_str);
         } catch (Exception e) {
             e.printStackTrace();
